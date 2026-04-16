@@ -10,9 +10,9 @@
 
 MFD chooses between two fine-mapping paths using a three-step decision rule:
 
-1. **No significant ancestry-specific variants (AS-Vs)?** → Use **MESuSiE** (joint modeling leverages shared LD structure for higher resolution)
-2. **Significant AS-Vs with low LD to shared signals (r² < 0.6)?** → Use **SuSiE post-hoc** (runs SuSiE-RSS independently per ancestry, then merges with a consensus LD matrix)
-3. **Significant AS-Vs in high LD with shared signals?** → Use **MESuSiE** if shared signal is genome-wide significant in all ancestries; otherwise **SuSiE post-hoc**
+1. **No significant ancestry-specific segregating variants (AS-SVs)?** → Use **MESuSiE** (joint modeling leverages shared LD structure for higher resolution)
+2. **Significant AS-SVs with low LD to shared signals (r² < 0.6)?** → Use **SuSiE post-hoc** (runs SuSiE-RSS independently per ancestry, then merges with a consensus LD matrix)
+3. **Significant AS-SVs in high LD with shared signals?** → Use **MESuSiE** if shared signal is genome-wide significant in all ancestries; otherwise **SuSiE post-hoc**
 
 ![MFD flowchart](MFD_flowchart.png)
 
@@ -75,7 +75,7 @@ A common threshold to declare a fine-mapped signal is `PIP_Either > 0.5`.
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `L` | `10` | Maximum number of causal effects per region |
-| `p_thresh` | `5e-8` | P-value threshold to define significant AS-Vs and shared variants |
+| `p_thresh` | `5e-8` | P-value threshold to define significant AS-SVs and shared variants |
 | `r2_thresh` | `0.6` | LD threshold for the decision rule and post-hoc CS merging |
 | `prior_weights` | `NULL` | Per-SNP prior probability (e.g., from functional annotations) |
 | `ancestry_weight` | `NULL` | Ancestry weights passed to MESuSiE |
