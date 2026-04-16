@@ -19,10 +19,11 @@ MFD chooses between two fine-mapping paths using a three-step decision rule:
 ## Installation
 
 ```r
-# Install dependencies first
+# MESuSiE is not on CRAN and must be installed manually first
 devtools::install_github("borangao/MESuSiE")
 
-# Install MFD
+# All other dependencies (susieR, data.table, dplyr, tidyr) are on CRAN
+# and will be installed automatically
 devtools::install_github("gchen4422/MFD")
 ```
 
