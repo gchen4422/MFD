@@ -32,8 +32,11 @@ devtools::install_github("gchen4422/MFD")
 ```r
 library(MFD)
 
-# summary_stat_1, summary_stat_2: data frames with columns SNP, CHR, POS, Z, Beta, Se, N
-# susie_EU_cov, susie_BB_cov:     LD correlation matrices with row/colnames matching SNP IDs
+# Load the built-in example data (EUR and AFR summary stats + LD matrices for a chr6 locus)
+data(summary_stat_1)  # EUR GWAS summary statistics
+data(summary_stat_2)  # AFR GWAS summary statistics
+data(susie_EU_cov)    # EUR LD correlation matrix
+data(susie_BB_cov)    # AFR LD correlation matrix
 
 result <- run_mf_decision(
   summary_stat_1, summary_stat_2,
@@ -41,8 +44,8 @@ result <- run_mf_decision(
   pop_names = c("EUR", "AFR")
 )
 
-result$decision   # which method was used and why
-result$results    # per-SNP PIPs and credible sets
+result$decision     # which method was used and why
+result$results      # per-SNP PIPs and credible sets
 result$raw_objects  # raw SuSiE or MESuSiE model objects
 ```
 
