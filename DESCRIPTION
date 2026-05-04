@@ -1,14 +1,22 @@
 Package: MFD
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Title: Multi-ancestry Fine-mapping Decision
+Version: 0.1.0
+Authors@R:
+    person("Guangxin", "Chen", , "chen4422@purdue.edu", role = c("aut", "cre"))
+Description: Adaptively selects between joint and post-hoc multi-ancestry
+    fine-mapping strategies based on locus-level genetic architecture.
+    Given GWAS summary statistics and LD matrices for two ancestry groups,
+    MFD applies a three-step decision rule to choose between MESuSiE
+    (joint modeling) and SuSiE post-hoc (per-ancestry modeling), and
+    returns per-SNP posterior inclusion probabilities (PIPs) and credible sets.
+License: GPL-3
+URL: https://github.com/gchen4422/MFD
+BugReports: https://github.com/gchen4422/MFD/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.1.0)
 Imports:
     data.table,
     dplyr,

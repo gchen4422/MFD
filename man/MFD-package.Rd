@@ -9,8 +9,16 @@
 Utilities for decision-guided multi-ancestry fine-mapping using
 SuSiE post-hoc and MESuSiE.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/gchen4422/MFD}
+  \item Report bugs at \url{https://github.com/gchen4422/MFD/issues}
+}
+
+}
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com}
+\strong{Maintainer}: Guangxin Chen \email{chen4422@purdue.edu}
 
 }
 \keyword{internal}
