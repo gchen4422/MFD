@@ -32,12 +32,12 @@ devtools::install_github("gchen4422/MFD")
 ```r
 library(MFD)
 
-# gwas_1, gwas_2: data frames with columns SNP, CHR, POS, Z, Beta, Se, N
-# ld_1, ld_2:     LD correlation matrices with row/colnames matching SNP IDs
+# summary_stat_1, summary_stat_2: data frames with columns SNP, CHR, POS, Z, Beta, Se, N
+# susie_EU_cov, susie_BB_cov:     LD correlation matrices with row/colnames matching SNP IDs
 
 result <- run_mf_decision(
-  gwas_1, gwas_2,
-  ld_1,   ld_2,
+  summary_stat_1, summary_stat_2,
+  susie_EU_cov,   susie_BB_cov,
   pop_names = c("EUR", "AFR")
 )
 
