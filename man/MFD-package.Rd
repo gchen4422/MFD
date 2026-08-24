@@ -4,10 +4,10 @@
 \name{MFD-package}
 \alias{MFD}
 \alias{MFD-package}
-\title{MFD: Decision-guided multi-ancestry fine-mapping}
+\title{MFD: Decision-guided multi-ancestry fine-mapping for K ancestries}
 \description{
 Utilities for decision-guided multi-ancestry fine-mapping using
-SuSiE post-hoc and MESuSiE.
+SuSiE post-hoc and MESuSiE, generalized from 2 to K (>= 2) ancestry groups.
 }
 \seealso{
 Useful links:

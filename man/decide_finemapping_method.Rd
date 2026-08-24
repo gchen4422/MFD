@@ -2,34 +2,43 @@
 % Please edit documentation in R/MFD_utility.R
 \name{decide_finemapping_method}
 \alias{decide_finemapping_method}
-\title{Decide between MESuSiE and SuSiE post-hoc}
+\title{Decide between MESuSiE and SuSiE post-hoc for K ancestries}
 \usage{
 decide_finemapping_method(
-  sum_eur,
-  sum_afr,
-  ld_eur,
-  ld_afr,
+  gwas_list,
+  ld_list,
   p_thresh = 5e-08,
   r2_thresh = 0.6
 )
 }
 \arguments{
-\item{sum_eur}{Summary statistics for ancestry 1. Must contain \code{SNP} and \code{PVAL}.}
+\item{gwas_list}{Named list of K GWAS summary statistics data frames.
+Each must contain \code{SNP} and \code{PVAL}.}
 
-\item{sum_afr}{Summary statistics for ancestry 2. Must contain \code{SNP} and \code{PVAL}.}
-
-\item{ld_eur}{LD matrix for ancestry 1.}
-
-\item{ld_afr}{LD matrix for ancestry 2.}
+\item{ld_list}{Named list of K LD matrices corresponding to \code{gwas_list}.}
 
 \item{p_thresh}{P-value threshold used to define significant variants.}
 
 \item{r2_thresh}{Squared-correlation threshold used to define high LD.}
 }
 \value{
-A list with elements \code{method}, \code{reason_code}, and \code{reason}.
+A list with elements:
+\describe{
+\item{method}{\code{"MESuSiE"} or \code{"SuSiE post-hoc"}.}
+\item{reason_code}{Integer code (1--4).}
+\item{reason}{Human-readable reason.}
+\item{diagnostics}{A data frame (\code{NULL} when no significant AS-SVs exist)
+with one row per (AS-SV, qualifying proxy) pair.  Columns:
+\code{AS_SV}, \code{signal_ancestries}, \code{proxy_SNP}, \code{ld_values},
+\code{proxy_pvals}, \code{proxy_globally_sig}, \code{classification}.
+AS-SVs with no qualifying proxy have a single row with \code{proxy_SNP = NA}
+and \code{classification = "untagged"}.}
+}
 }
 \description{
 Uses ancestry-specific significant variants and LD relationships to choose
-between joint and post-hoc fine-mapping strategies.
+between joint and post-hoc fine-mapping strategies.  Each significant AS-SV
+is evaluated jointly across all its signal-bearing ancestries: a single
+K-way shared proxy must be in high LD in \strong{every} ancestry where the AS-SV
+is significant.
 }

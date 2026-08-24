@@ -2,14 +2,12 @@
 % Please edit documentation in R/MFD_utility.R
 \name{run_mf_decision}
 \alias{run_mf_decision}
-\title{Run decision-guided multi-ancestry fine-mapping with raw outputs}
+\title{Run decision-guided multi-ancestry fine-mapping with raw outputs (K ancestries)}
 \usage{
 run_mf_decision(
-  gwas_1,
-  gwas_2,
-  ld_1,
-  ld_2,
-  pop_names = c("Pop1", "Pop2"),
+  gwas_list,
+  ld_list,
+  pop_names = names(gwas_list),
   L = 10,
   prior_weights = NULL,
   ancestry_weight = NULL,
@@ -18,17 +16,13 @@ run_mf_decision(
 )
 }
 \arguments{
-\item{gwas_1}{GWAS summary statistics for ancestry 1. Must contain
-\code{SNP}, \code{CHR}, \code{POS}, \code{Beta}, \code{Se}, \code{Z}, and \code{N}.}
+\item{gwas_list}{Named list of K GWAS summary statistics data frames.
+Each must contain \code{SNP}, \code{CHR}, \code{POS}, \code{Beta}, \code{Se}, \code{Z}, \code{N}, and \code{PVAL}.}
 
-\item{gwas_2}{GWAS summary statistics for ancestry 2. Must contain
-\code{SNP}, \code{CHR}, \code{POS}, \code{Beta}, \code{Se}, \code{Z}, and \code{N}.}
+\item{ld_list}{Named list of K LD matrices corresponding to \code{gwas_list}.}
 
-\item{ld_1}{LD matrix matched to \code{gwas_1}.}
-
-\item{ld_2}{LD matrix matched to \code{gwas_2}.}
-
-\item{pop_names}{Character vector of length 2 giving ancestry labels.}
+\item{pop_names}{Character vector of length K giving ancestry labels.
+Defaults to \code{names(gwas_list)}.}
 
 \item{L}{Number of single-effect components.}
 

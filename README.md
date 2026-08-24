@@ -38,7 +38,7 @@ data(summary_stat_2)  # AFR GWAS summary statistics
 data(susie_EU_cov)    # EUR LD correlation matrix
 data(susie_BB_cov)    # AFR LD correlation matrix
 
-result <- run_mf_decision(
+result <- run_mf_decision_2pop(
   summary_stat_1, summary_stat_2,
   susie_EU_cov,   susie_BB_cov,
   pop_names = c("EUR", "AFR")
@@ -49,7 +49,42 @@ result$results      # per-SNP PIPs and credible sets
 result$raw_objects  # raw SuSiE or MESuSiE model objects
 ```
 
-### Input format (`gwas_1` / `gwas_2`)
+### Using MFD with three or more ancestries
+
+MFD supports two or more ancestry groups. For K-ancestry analysis, provide
+GWAS summary statistics and their matching LD matrices as named lists. The
+names and ordering of `gwas_list` and `ld_list` must agree.
+
+```r
+gwas_list <- list(
+  EUR = summary_stat_eur,
+  AFR = summary_stat_afr,
+  EAS = summary_stat_eas
+)
+
+ld_list <- list(
+  EUR = ld_eur,
+  AFR = ld_afr,
+  EAS = ld_eas
+)
+
+result <- run_mf_decision(
+  gwas_list = gwas_list,
+  ld_list = ld_list
+)
+
+result$decision
+head(result$results)
+```
+
+For K ancestries, the output contains ancestry-specific columns named
+`PIP_Ancestry_1` through `PIP_Ancestry_K` and `CS_Ancestry_1` through
+`CS_Ancestry_K`. Their ordering follows the names in `gwas_list`.
+
+### Input format (`gwas_list[[1]]` / `gwas_list[[2]]` / ... / `gwas_list[[K]]`)
+
+Each ancestry-specific GWAS table uses the same column format. The pairwise
+K=2 analysis is a special case of this general K-ancestry input.
 
 | Column | Required | Description |
 |--------|----------|-------------|
@@ -66,10 +101,10 @@ result$raw_objects  # raw SuSiE or MESuSiE model objects
 | Column | Description |
 |--------|-------------|
 | `PIP_Either` | Probability of being causal in **at least one** ancestry (primary discovery metric) |
-| `PIP_Shared` | Probability of being causal in **both** ancestries |
-| `PIP_Ancestry_1/2` | Ancestry-specific causal probability |
+| `PIP_Shared` | Probability of being causal in **all K** ancestries |
+| `PIP_Ancestry_1/2/.../K` | Ancestry-specific causal probability for ancestries 1 through K |
 | `CS` | "Either" 95% credible set membership (0 = not in any CS) |
-| `CS_Ancestry_1/2` | Ancestry-specific credible set membership |
+| `CS_Ancestry_1/2/.../K` | Ancestry-specific credible set membership for ancestries 1 through K |
 
 A common threshold to declare a fine-mapped signal is `PIP_Either > 0.5`.
 
@@ -82,7 +117,7 @@ A common threshold to declare a fine-mapped signal is `PIP_Either > 0.5`.
 | `r2_thresh` | `0.6` | LD threshold for the decision rule and post-hoc CS merging |
 | `prior_weights` | `NULL` | Per-SNP prior probability (e.g., from functional annotations) |
 | `ancestry_weight` | `NULL` | Ancestry weights passed to MESuSiE |
-| `pop_names` | `c("Pop1","Pop2")` | Labels for the two ancestries |
+| `pop_names` | `names(gwas_list)` | Labels for the input ancestries |
 
 ## Dependencies
 

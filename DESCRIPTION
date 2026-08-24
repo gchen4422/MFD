@@ -1,12 +1,12 @@
 Package: MFD
-Title: Multi-ancestry Fine-mapping Decision
-Version: 0.1.0
+Title: Multi-Ancestry Fine-Mapping Decision
+Version: 0.2.0
 Authors@R:
     person("Guangxin", "Chen", , "chen4422@purdue.edu", role = c("aut", "cre"))
 Description: Adaptively selects between joint and post-hoc multi-ancestry
     fine-mapping strategies based on locus-level genetic architecture.
-    Given GWAS summary statistics and LD matrices for two ancestry groups,
-    MFD applies a three-step decision rule to choose between MESuSiE
+    Given GWAS summary statistics and LD matrices for two or more ancestry
+    groups, MFD applies a decision rule to choose between MESuSiE
     (joint modeling) and SuSiE post-hoc (per-ancestry modeling), and
     returns per-SNP posterior inclusion probabilities (PIPs) and credible sets.
 License: GPL-3
