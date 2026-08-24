@@ -29,6 +29,8 @@ devtools::install_github("gchen4422/MFD")
 
 ## Quick Start
 
+### Using MFD with two ancestries
+
 ```r
 library(MFD)
 
@@ -81,7 +83,7 @@ For K ancestries, the output contains ancestry-specific columns named
 `PIP_Ancestry_1` through `PIP_Ancestry_K` and `CS_Ancestry_1` through
 `CS_Ancestry_K`. Their ordering follows the names in `gwas_list`.
 
-### Input format (`gwas_list[[1]]` / `gwas_list[[2]]` / ... / `gwas_list[[K]]`)
+### Input format
 
 Each ancestry-specific GWAS table uses the same column format. The pairwise
 K=2 analysis is a special case of this general K-ancestry input.
