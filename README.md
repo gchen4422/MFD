@@ -4,7 +4,7 @@
 
 > Analysis code for the benchmarking study is available at [gchen4422/MFD_analysis](https://github.com/gchen4422/MFD_analysis/tree/main).
 
-> **Detailed tutorials** (installation, data preparation, worked examples, and visualization) are available at the [MFD website](https://gchen4422.github.io/MFD/).
+> **Detailed tutorials** (installation, data preparation, worked examples, and visualization) are available at the [MFD website](https://gchen4422.github.io/MFD/index.html).
 
 ## How It Works
 
