@@ -11,8 +11,8 @@
 MFD chooses between two fine-mapping paths using a three-step decision rule:
 
 1. **No significant ancestry-specific segregating variants (AS-SVs)?** → Use **MESuSiE** (joint modeling leverages shared LD structure for higher resolution)
-2. **Significant AS-SVs with low LD to shared signals (r² < 0.6)?** → Use **SuSiE post-hoc** (runs SuSiE-RSS independently per ancestry, then merges with a consensus LD matrix)
-3. **Significant AS-SVs in high LD with shared signals?** → Use **MESuSiE** if shared signal is genome-wide significant in all ancestries; otherwise **SuSiE post-hoc**
+2. **Significant AS-SVs with low LD to cross-ancestry signals (r² < 0.6)?** → Use **SuSiE post-hoc** (runs SuSiE independently per ancestry, then merges with a consensus LD matrix)
+3. **Significant AS-SVs in high LD with cross-ancestry signals?** → Use **MESuSiE** if the cross-ancestry signal is genome-wide significant in all ancestries; otherwise **SuSiE post-hoc**
 
 ![MFD flowchart](MFD_flowchart.png)
 
