@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Guangxin Chen" />
+
+<meta name="date" content="2026-08-24" />
+
+<title>Run MFD</title>
+
+<script src="site_libs/header-attrs-2.28/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">MFD</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="installation.html">Installation</a>
+</li>
+<li>
+  <a href="Run_MFD.html">Run MFD</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    AOU Example
+
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="Data_prepare.html">Data Preparation</a>
+    </li>
+    <li>
+      <a href="AOU_example.html">Real Data Example</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/gchen4422/MFD">
+    <span class="fa fa-github"></span>
+
+    Source Code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Run MFD</h1>
+<h4 class="author">Guangxin Chen</h4>
+<h4 class="date">2026-08-24</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2026-08-25
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>MF_benchmarking_MFD/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.2). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20260210code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20260210)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20260210code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20260210)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomgchen4422MFDtreeae98c5770c3b0b1ed9eaf2c5207d3a42b567e6fftargetblankae98c57a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/gchen4422/MFD/tree/ae98c5770c3b0b1ed9eaf2c5207d3a42b567e6ff" target="_blank">ae98c57</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcomgchen4422MFDtreeae98c5770c3b0b1ed9eaf2c5207d3a42b567e6fftargetblankae98c57a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/gchen4422/MFD/tree/ae98c5770c3b0b1ed9eaf2c5207d3a42b567e6ff" target="_blank">ae98c57</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    analysis/MFD_flowchart.png
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/Run_MFD.Rmd</code>) and HTML
+(<code>docs/Run_MFD.html</code>) files. If you’ve configured a remote
+Git repository (see <code>?wflow_git_remote</code>), click on the
+hyperlinks in the table below to view the files as they were in that
+past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/ae98c5770c3b0b1ed9eaf2c5207d3a42b567e6ff/docs/Run_MFD.html" target="_blank">ae98c57</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-25
+</td>
+<td>
+Restore LD plots and refresh site provenance
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/c67888a629ee8ea5defd432161e4a7576d7df9cb/analysis/Run_MFD.Rmd" target="_blank">c67888a</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Refresh MFD website documentation
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/c67888a629ee8ea5defd432161e4a7576d7df9cb/docs/Run_MFD.html" target="_blank">c67888a</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Refresh MFD website documentation
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/ba2b07bce2dec30c3a781bfaa2816defb05f34c5/docs/Run_MFD.html" target="_blank">ba2b07b</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Build clarified PIP and CS documentation
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/c04139aeb38e2acc8a8a69cf81f123e89e6ea873/analysis/Run_MFD.Rmd" target="_blank">c04139a</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Clarify cross-ancestry PIP interpretation
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/f80f10e3efca5cf570c456d5f0fb51ae9a5a82ae/docs/Run_MFD.html" target="_blank">f80f10e</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Build harmonized Run MFD page
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/6818556d4e954167bc554dfa271ed417a10a7560/analysis/Run_MFD.Rmd" target="_blank">6818556</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Harmonize Run MFD section hierarchy
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/4c5e9145b16bafeb2caa1227f52a5b1df1259ca9/docs/Run_MFD.html" target="_blank">4c5e914</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Build clarified MFD website pages
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/3c26b5ed7a0f71c00d78eafda519d7bd2626bf7c/analysis/Run_MFD.Rmd" target="_blank">3c26b5e</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Clarify cross-ancestry terminology and K inputs
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/56b23d29e92fd0654be507aa73d764299c3a6782/docs/Run_MFD.html" target="_blank">56b23d2</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Build K-ancestry website pages
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/85922a079b1770f948dd0afff1fd9d8d0f52018d/analysis/Run_MFD.Rmd" target="_blank">85922a0</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-08-24
+</td>
+<td>
+Document K-ancestry website usage
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/1f9faf2f612b6325bf36fa4c0292bb55332963a8/docs/Run_MFD.html" target="_blank">1f9faf2</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/9dee91eca21dd239e2a64ff17419f6c3f3af4542/analysis/Run_MFD.Rmd" target="_blank">9dee91e</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/e4d0c2136663897e3a7ebe72cb29b1e9a02041d5/docs/Run_MFD.html" target="_blank">e4d0c21</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/9d222ae178f0621ad942032a01d625003ee2ad6a/analysis/Run_MFD.Rmd" target="_blank">9d222ae</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/fd83472ce3c3324997dbe58948302bd16e0a41a2/docs/Run_MFD.html" target="_blank">fd83472</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/203f2c3f704598ca75eb69831861a39dab10631b/analysis/Run_MFD.Rmd" target="_blank">203f2c3</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Add Source Code tab to navbar
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/391df5a5d49699e3f89708e6e334548977e5a865/docs/Run_MFD.html" target="_blank">391df5a</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/7fb5cf770a112700533cb7f2ba240a3c4f983b19/docs/Run_MFD.html" target="_blank">7fb5cf7</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/ad671ced2651001dec444ca0d6f544b7fc9f289e/docs/Run_MFD.html" target="_blank">ad671ce</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/00f692b5c3c813a55dbe643c4525852b13edeb47/analysis/Run_MFD.Rmd" target="_blank">00f692b</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-05-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/5050c6dcf7056599ff1bc1ba1dcfcc1f4bc486b2/docs/Run_MFD.html" target="_blank">5050c6d</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-13
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/3f3ec0d24606927c89ecb761a1b28464cd7f0678/analysis/Run_MFD.Rmd" target="_blank">3f3ec0d</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-13
+</td>
+<td>
+Refine DBP real data examples
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/86226efd4e2e107cc4398ecb53c5b4615176894e/docs/Run_MFD.html" target="_blank">86226ef</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-13
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/6163f845eab811c7b94918734bbed4d524d55b19/docs/Run_MFD.html" target="_blank">6163f84</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-11
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/33e49c0e2f1764620dabb09811127d4fb5915205/docs/Run_MFD.html" target="_blank">33e49c0</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-11
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/ad065c60a212cc928f79024befbf5d5fba2af7a8/analysis/Run_MFD.Rmd" target="_blank">ad065c6</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-11
+</td>
+<td>
+Refine DBP real data examples
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/gchen4422/MFD/596adfe25ca0f84dd41ec541f11a035b568d9e4a/docs/Run_MFD.html" target="_blank">596adfe</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-11
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/e582f0fb3e50529bf41b9c6f923151e9871529ef/analysis/Run_MFD.Rmd" target="_blank">e582f0f</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-11
+</td>
+<td>
+Refine DBP real data examples
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="mfd-example" class="section level1">
+<h1>MFD Example</h1>
+<div id="data-formatting-for-mfd" class="section level2">
+<h2>1. Data Formatting for MFD</h2>
+<p>The two-ancestry MFD interface accepts two harmonized GWAS dataframes
+and their corresponding linkage disequilibrium (LD) matrices. The
+general interface for three or more ancestries is shown in Section
+5.</p>
+<div id="required-inputs" class="section level3">
+<h3>1.1 Required Inputs</h3>
+<ul>
+<li><strong><code>gwas_1</code> &amp; <code>gwas_2</code></strong>:
+Dataframes containing summary statistics for Population 1 and Population
+2, respectively.</li>
+<li><strong><code>ld_1</code> &amp; <code>ld_2</code></strong>: Numeric
+LD matrices (correlation matrices) corresponding exactly to the SNPs in
+<code>gwas_1</code> and <code>gwas_2</code>.
+<ul>
+<li><em>Note:</em> The row and column names of these matrices need to
+match the <code>SNP</code> IDs in your GWAS dataframes.</li>
+</ul></li>
+<li><strong><code>pop_names</code></strong>: A character vector of
+length 2 specifying the names of the populations (e.g.,
+<code>c("EUR", "AFR")</code>).</li>
+</ul>
+</div>
+<div id="column-specifications-for-gwas_1-gwas_2"
+class="section level3">
+<h3>1.2 Column Specifications (for <code>gwas_1</code> &amp;
+<code>gwas_2</code>)</h3>
+<p>Ensure your dataframes contain the following columns. The column
+names are case-sensitive.</p>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Column Name</th>
+<th align="left">Status</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong><code>SNP</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">The unique variant identifier (e.g., rsID or
+<code>chr:pos</code>). Must correspond to the matching LD input.</td>
+</tr>
+<tr class="even">
+<td align="left"><strong><code>CHR</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">Chromosome number (numeric or character, e.g.,
+<code>1</code>, <code>"chr1"</code>).</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong><code>POS</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">Base pair position (numeric).</td>
+</tr>
+<tr class="even">
+<td align="left"><strong><code>Z</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">Z-score of the variant effect size (<span
+class="math inline">\(Beta / Se\)</span>).</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong><code>Beta</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">Effect size (log-odds ratio for binary traits or linear
+regression coefficient for quantitative traits).</td>
+</tr>
+<tr class="even">
+<td align="left"><strong><code>Se</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">Standard error of the effect size.</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong><code>N</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">Sample size for the variant.</td>
+</tr>
+<tr class="even">
+<td align="left"><strong><code>PVAL</code></strong></td>
+<td align="left"><strong>Required</strong></td>
+<td align="left">P-value used by the MFD decision rule.</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>library(MFD)
+library(dplyr)
+library(susieR)
+
+# Load built-in example data (chr6 locus, EUR and AFR cohorts)
+data(summary_stat_1)
+data(summary_stat_2)
+data(susie_EU_cov)
+data(susie_BB_cov)
+head(summary_stat_1)</code></pre>
+<pre><code>           SNP   CHR       POS Signal          Beta          Se          Z
+        &lt;char&gt; &lt;int&gt;     &lt;int&gt;  &lt;int&gt;         &lt;num&gt;       &lt;num&gt;      &lt;num&gt;
+1: 6:166484699     6 166484699      0  0.0004176536 0.001825742  0.2287583
+2: 6:166485557     6 166485557      0  0.0014530711 0.001825742  0.7958798
+3: 6:166486372     6 166486372      0 -0.0002418031 0.001825742 -0.1324410
+4: 6:166487606     6 166487606      0  0.0006190716 0.001825742  0.3390795
+5: 6:166487930     6 166487930      0  0.0005912423 0.001825742  0.3238367
+6: 6:166487971     6 166487971      0  0.0028866047 0.001825742  1.5810585
+       N      PVAL
+   &lt;num&gt;     &lt;num&gt;
+1: 3e+05 0.8190568
+2: 3e+05 0.4261019
+3: 3e+05 0.8946355
+4: 3e+05 0.7345499
+5: 3e+05 0.7460617
+6: 3e+05 0.1138647</code></pre>
+<pre class="r"><code>str(susie_EU_cov)</code></pre>
+<pre><code> num [1:1933, 1:1933] 1 -0.191 -0.344 -0.299 -0.298 ...
+ - attr(*, &quot;dimnames&quot;)=List of 2
+  ..$ : chr [1:1933] &quot;6:166484699&quot; &quot;6:166485557&quot; &quot;6:166486372&quot; &quot;6:166487606&quot; ...
+  ..$ : chr [1:1933] &quot;6:166484699&quot; &quot;6:166485557&quot; &quot;6:166486372&quot; &quot;6:166487606&quot; ...</code></pre>
+</div>
+</div>
+<div id="run-mfd" class="section level2">
+<h2>2. Run MFD</h2>
+<pre class="r"><code>mfd_result = run_mf_decision_2pop(summary_stat_1,summary_stat_2,susie_EU_cov,susie_BB_cov, pop_names = c(&quot;EUR&quot;, &quot;AFR&quot;))</code></pre>
+<p>The output of <code>run_mf_decision</code> is a list containing three
+elements: <code>decision</code> (the method logic used),
+<code>results</code> (the main data frame), and <code>raw_objects</code>
+(the underlying model outputs from either MESuSiE or SuSiE).</p>
+<p>The key interpretations focus on the <strong>95% Credible Sets
+(CS)</strong> and <strong>Posterior Inclusion Probabilities
+(PIPs)</strong> found in the <code>results</code> data frame.</p>
+<div id="credible-sets-cs" class="section level3">
+<h3>2.1 95% Credible Sets (CS)</h3>
+<p>The <code>CS</code> column represents the “Either” Credible Set,
+which is a group of SNPs that, with 95% probability, contains at least
+one causal variant active in <strong>either</strong> analyzed
+population.</p>
+<ul>
+<li><strong><code>CS</code> values</strong>: <code>CS = 0</code> means
+the SNP is not in an “Either” Credible Set; positive values
+(<code>1</code>, <code>2</code>, …) identify the Credible Set. In this
+example, only <code>0</code> and <code>1</code> appear because one
+Credible Set was detected.</li>
+<li><strong>Ancestry-Specific CS</strong>: The columns
+<code>CS_Ancestry_1</code> and <code>CS_Ancestry_2</code> indicate if a
+SNP is part of a Credible Set specific to one population (derived from
+SuSiE or MESuSiE decomposition).</li>
+</ul>
+</div>
+<div id="posterior-inclusion-probabilities-pips" class="section level3">
+<h3>2.2 Posterior Inclusion Probabilities (PIPs)</h3>
+<p>MFD provides multiple PIP metrics to help you distinguish between
+cross-ancestry and ancestry-specific signals. A common threshold to
+declare a “fine-mapped signal” is <code>PIP &gt; 0.5</code>.</p>
+<ul>
+<li><strong><code>PIP_Either</code></strong>: The probability that the
+SNP is causal in <strong>at least one</strong> ancestry. This is the
+primary metric for discovery.</li>
+<li><strong><code>PIP_Shared</code></strong>: The probability that the
+SNP is causal in <strong>both</strong> ancestries.</li>
+<li><strong><code>PIP_Ancestry_1 / PIP_Ancestry_2</code></strong>: The
+probability that the SNP is causal specifically in Population 1 or
+Population 2.</li>
+</ul>
+</div>
+<div id="example-code-for-analysis" class="section level3">
+<h3>2.3 Example Code for Analysis</h3>
+<p>You can use the following R code to filter and interpret the
+significant findings from your results:</p>
+<pre class="r"><code># Extract the formatted results dataframe
+res_df &lt;- mfd_result$results
+
+# A. Identify SNPs in the 95% Credible Set
+# Retain SNPs assigned to any credible set
+credible_set_snps &lt;- res_df %&gt;% filter(CS &gt; 0)
+print(credible_set_snps)</code></pre>
+<pre><code>          SNP CHR       POS PIP_Either PIP_Shared PIP_Ancestry_1 PIP_Ancestry_2
+1 6:167297116   6 167297116  0.9999995          0              0      0.9999995
+  CS CS_Ancestry_1 CS_Ancestry_2
+1  1             0             1</code></pre>
+<pre class="r"><code># B. Identify Discovery Signals (PIP &gt; 0.5)
+# SNPs likely to be causal in at least one population
+discovery_snps &lt;- res_df %&gt;% filter(PIP_Either &gt; 0.5)
+
+# C. Distinguish cross-ancestry and ancestry-specific effects
+interpretation &lt;- discovery_snps %&gt;%
+  mutate(Type = case_when(
+    PIP_Shared &gt; 0.5 ~ &quot;Cross-Ancestry Signal&quot;,
+    PIP_Ancestry_1 &gt; 0.5 ~ &quot;Ancestry 1 Specific&quot;,
+    PIP_Ancestry_2 &gt; 0.5 ~ &quot;Ancestry 2 Specific&quot;,
+    TRUE ~ &quot;Ambiguous / Low Confidence&quot;
+  )) %&gt;%
+  select(SNP, PIP_Either, PIP_Shared, PIP_Ancestry_1, PIP_Ancestry_2, Type)
+
+print(interpretation)</code></pre>
+<pre><code>          SNP PIP_Either PIP_Shared PIP_Ancestry_1 PIP_Ancestry_2
+1 6:167297116  0.9999995          0              0      0.9999995
+                 Type
+1 Ancestry 2 Specific</code></pre>
+<p><strong>Interpretation Logic:</strong></p>
+<ul>
+<li>If <code>PIP_Shared</code> is high, the variant is likely a
+cross-ancestry causal variant.</li>
+<li>If <code>PIP_Ancestry_1</code> is high but <code>PIP_Shared</code>
+is low, the variant is likely specific to the first population.</li>
+</ul>
+</div>
+</div>
+<div id="configuring-tuning-parameters" class="section level2">
+<h2>3. Configuring Tuning Parameters</h2>
+<p>When running <code>run_mf_decision</code>, several tuning parameters
+can be adjusted to refine the model’s behavior, the decision logic, and
+the final clustering of signals.</p>
+<div id="model-configuration" class="section level3">
+<h3>3.1 Model Configuration</h3>
+<p>These parameters control the underlying fine-mapping models (SuSiE
+and MESuSiE).</p>
+<ul>
+<li><strong>Number of Effects (<code>L</code>)</strong>: Specifies the
+maximum number of causal effects to consider in the region (Default:
+<code>10</code>).</li>
+<li><strong>Prior Weights (<code>prior_weights</code>)</strong>:
+Represents the prior probability of a specific SNP being causal. Users
+can supply a custom vector to incorporate functional annotations.</li>
+<li><strong>Ancestry Weight (<code>ancestry_weight</code>)</strong>:
+Configures the weighting for different ancestries during multi-ancestry
+fine-mapping (see <a
+href="https://borangao.github.io/meSuSie_Analysis/Run_MESuSiE.html">MESuSiE
+documentation</a> for details).</li>
+</ul>
+</div>
+<div id="decision-logic-thresholds" class="section level3">
+<h3>3.2 Decision Logic Thresholds</h3>
+<p>These parameters control the <code>decide_finemapping_method</code>
+function, determining whether MFD switches to <strong>MESuSiE</strong>
+(for cross-ancestry signals) or <strong>SuSiE post-hoc</strong> (for
+ancestry-specific signals).</p>
+<ul>
+<li><strong>Significance Threshold (<code>p_thresh</code>)</strong>: The
+P-value threshold (Default: <code>5e-8</code>) used to identify
+significant Ancestry-Specific Variants (AS-Vs) and cross-ancestry
+variants.</li>
+<li><strong>LD Threshold (<code>r2_thresh</code>)</strong>: The LD
+threshold (Default: <code>0.6</code>) used for two distinct purposes:
+<ol style="list-style-type: decimal">
+<li><strong>Method Decision:</strong> It determines whether an
+Ancestry-Specific Variant is in high LD with a cross-ancestry signal. If
+<span class="math inline">\(r^2 \geq 0.6\)</span>, MFD checks whether
+the cross-ancestry signal is genome-wide significant in all ancestries
+and uses MESuSiE only when it is.</li>
+<li><strong>Signal Merging:</strong> In the <strong>SuSiE
+post-hoc</strong> mode, this threshold controls the “tightness” of the
+merged “Either” Credible Sets. The function dynamically calculates a
+clustering height cutoff using complete linkage, ensuring SNPs are only
+merged into the same signal cluster if their pairwise correlation
+exceeds this threshold. Raising this value forces strictly tight
+clusters; lowering it allows looser signals to merge.</li>
+</ol></li>
+</ul>
+</div>
+</div>
+<div id="mfd-visualization" class="section level2">
+<h2>4. MFD Visualization</h2>
+<p>Since MFD returns the raw model objects within its output list
+(<code>$raw_objects</code>), you can visualize the results using the
+native plotting functions available in <code>susieR</code> or
+<code>MESuSiE</code>.</p>
+<p>For more advanced, multi-ancestry visualizations, we provide a custom
+plotting function in the <strong>Real Data Example</strong> section.</p>
+<p>In the example below (where MFD selected “SuSiE post-hoc”), we can
+visualize the PIPs for each population individually:</p>
+<pre class="r"><code>susie_plot(mfd_result$raw_objects$susie_list$EUR, y = &quot;PIP&quot;,
+           main = &quot;Fine-mapping results for EUR&quot;)</code></pre>
+<p><img src="figure/Run_MFD.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-1">
+Past versions of unnamed-chunk-4-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-4-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/596adfe25ca0f84dd41ec541f11a035b568d9e4a/docs/figure/Run_MFD.Rmd/unnamed-chunk-4-1.png" target="_blank">596adfe</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-11
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code># Plot AFR results
+susie_plot(mfd_result$raw_objects$susie_list$AFR, y = &quot;PIP&quot;,
+           main = &quot;Fine-mapping results for AFR&quot;)</code></pre>
+<p><img src="figure/Run_MFD.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-2">
+Past versions of unnamed-chunk-4-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-4-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/gchen4422/MFD/blob/596adfe25ca0f84dd41ec541f11a035b568d9e4a/docs/figure/Run_MFD.Rmd/unnamed-chunk-4-2.png" target="_blank">596adfe</a>
+</td>
+<td>
+Guangxin Chen
+</td>
+<td>
+2026-02-11
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="run-mfd-with-three-or-more-ancestries" class="section level2">
+<h2>5. Run MFD with Three or More Ancestries</h2>
+<p>For three or more ancestries, provide the GWAS summary statistics and
+matching LD matrices as named lists. The names and ordering of
+<code>gwas_list</code> and <code>ld_list</code> must agree.</p>
+<p>Each element of <code>gwas_list</code> uses the same
+summary-statistics format described above for the two-ancestry case.
+Each element of <code>ld_list</code> is a square SNP-by-SNP LD
+correlation matrix matched to the corresponding GWAS table, with
+variants in the same order.</p>
+<pre class="r"><code>gwas_list &lt;- list(
+  EUR = summary_stat_eur,
+  AFR = summary_stat_afr,
+  EAS = summary_stat_eas
+)
+
+ld_list &lt;- list(
+  EUR = ld_eur,
+  AFR = ld_afr,
+  EAS = ld_eas
+)
+
+mfd_result &lt;- run_mf_decision(
+  gwas_list = gwas_list,
+  ld_list = ld_list
+)
+
+mfd_result$decision
+head(mfd_result$results)</code></pre>
+<p>For K ancestries, <code>mfd_result$results</code> has the same
+general format as in the two-ancestry case, with ancestry-specific
+columns named <code>PIP_Ancestry_1</code> through
+<code>PIP_Ancestry_K</code> and <code>CS_Ancestry_1</code> through
+<code>CS_Ancestry_K</code>. Their ordering follows the ancestry names in
+<code>gwas_list</code>.</p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.2.2 (2022-10-31)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Rocky Linux 8.10 (Green Obsidian)
+
+Matrix products: default
+BLAS/LAPACK: /apps/spack/negishi/apps/openblas/0.3.21-gcc-12.2.0-lzvicim/lib/libopenblas_zenp-r0.3.21.so
+
+locale:
+ [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8
+ [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8
+ [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C
+[10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+other attached packages:
+[1] susieR_0.12.35  dplyr_1.1.4     MFD_0.2.0       workflowr_1.7.2
+
+loaded via a namespace (and not attached):
+ [1] ggrepel_0.9.6          Rcpp_1.1.1             lattice_0.20-45
+ [4] tidyr_1.3.1            prettyunits_1.2.0      getPass_0.2-4
+ [7] ps_1.9.2               rprojroot_2.1.1        digest_0.6.37
+[10] utf8_1.2.4             R6_2.6.1               plyr_1.8.9
+[13] evaluate_1.0.5         highr_0.11             httr_1.4.7
+[16] ggplot2_3.5.2          pillar_1.9.0           rlang_1.2.0
+[19] progress_1.2.3         rstudioapi_0.14        data.table_1.16.2
+[22] irlba_2.3.5.1          whisker_0.4            callr_3.7.6
+[25] nloptr_2.1.1           jquerylib_0.1.4        Matrix_1.6-4
+[28] rmarkdown_2.28         desc_1.4.3             stringr_1.5.1
+[31] munsell_0.5.1          mixsqp_0.3-54          compiler_4.2.2
+[34] httpuv_1.6.6           xfun_0.48              pkgconfig_2.0.3
+[37] pkgbuild_1.4.8         htmltools_0.5.8.1      tidyselect_1.2.1
+[40] tibble_3.2.1           matrixStats_1.4.1      reshape_0.8.9
+[43] fansi_1.0.6            withr_3.0.2            crayon_1.5.3
+[46] later_1.3.2            grid_4.2.2             jsonlite_2.0.0
+[49] gtable_0.3.6           lifecycle_1.0.5        git2r_0.36.2
+[52] magrittr_2.0.3         scales_1.3.0           cachem_1.1.0
+[55] cli_3.6.3              stringi_1.8.4          fs_2.0.1
+[58] promises_1.3.0         RcppArmadillo_15.2.4-1 bslib_0.8.0
+[61] generics_0.1.3         vctrs_0.6.5            cowplot_1.1.3
+[64] tools_4.2.2            glue_1.8.0             purrr_1.0.2
+[67] hms_1.1.3              processx_3.8.7         pkgload_1.5.1
+[70] fastmap_1.2.0          yaml_2.3.10            colorspace_2.1-1
+[73] MESuSiE_1.0            knitr_1.48             sass_0.4.9            </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

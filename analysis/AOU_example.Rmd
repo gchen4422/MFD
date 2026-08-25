@@ -1,0 +1,160 @@
+---
+title: "Real Data Example of Multi-ancestry fine-mapping in All of Us for DBP"
+author: "Guangxin Chen"
+date: "2026-08-24"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+In this section, we demonstrate the performance of **MFD** using real-world loci associated with Diastolic Blood Pressure (DBP) from the *All of Us* dataset. These cases demonstrate that when ancestry-specific variants are present (***CACNA1D*** Example), MFD's explicit modeling of ancestry-specific variants improves the recovery of causal variants segregating in only a subset of ancestries, whereas joint modeling approaches focused on cross-ancestry signals have reduced power in this setting. Conversely, when the primary signal is a cross-ancestry signal (***FES*** Example), MFD leverages diverse LD structures to enhance fine-mapping resolution and more accurately prioritize putative causal variants.
+
+## Setup
+
+```{r setup, message=FALSE, warning=FALSE}
+library(data.table)
+library(patchwork)
+
+source(here::here("code/plot_utils.R"))
+
+res_dir   <- "/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summary_res/"
+Gene_List <- fread("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/format_summary_stats/Annotation/Gencode_genelist/Gencode_GRCh38_Genes_UniqueList2025.txt", header = TRUE)
+```
+
+## Example 1: Ancestry-Specific Signal at *CACNA1D* (Locus 11)
+
+Locus 11 (lead variant **rs9821489**) highlights a critical advantage of MFD: the ability to incorporate **ancestry-specific variants**. The causal signal here is specific to the African Ancestry (AA) population. Joint modeling methods like MESuSiE often miss such signals because they require a common SNP set across all ancestries, filtering out variants unique to one group. MFD's decision framework selects the **SuSiE post-hoc** approach, preserving these ancestry-specific signals.
+
+```{r locus11, message=FALSE, warning=FALSE, fig.height=9, fig.width=8}
+trait     <- "DBP"
+LD_BLOCK  <- 11
+lead_SNP  <- "rs9821489"
+
+load(paste0(res_dir, "res_all_mf.RData"))
+res_all <- res_all %>% filter(PHENONAME == trait)
+
+wrk_dir  <- paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/results_", trait, "/")
+data_dir <- paste0(wrk_dir, "summary_data/")
+
+EU_cov <- as.matrix(fread(paste0(data_dir, "eur_loci_", LD_BLOCK, ".ld")))
+BB_cov <- as.matrix(fread(paste0(data_dir, "afr_loci_", LD_BLOCK, ".ld")))
+
+candidate_region <- res_all %>%
+  filter(Region == LD_BLOCK) %>%
+  mutate(
+    r2_EUR = get_ld_vec(EU_cov, lead_SNP)[as.character(SNP)],
+    r2_AFR = get_ld_vec(BB_cov, lead_SNP)[as.character(SNP)],
+    r2_EUR = ifelse(is.na(r2_EUR), 0, r2_EUR),
+    r2_AFR = ifelse(is.na(r2_AFR), 0, r2_AFR),
+    Z_eur  = coalesce(Z_eur, 0),
+    Z_afr  = coalesce(Z_afr, 0),
+    POS    = as.numeric(POS)
+  ) %>%
+  assign_cats()
+
+# GWAS panels
+EUR_GWAS <- candidate_region %>%
+  mutate(r2 = r2_EUR, PIP = -log10(2*pnorm(-abs(Z_eur))), Lead_SNP = as.integer(SNP == lead_SNP)) %>%
+  select(SNP, POS, r2, PIP, Lead_SNP)
+AFR_GWAS <- candidate_region %>%
+  mutate(r2 = r2_AFR, PIP = -log10(2*pnorm(-abs(Z_afr))), Lead_SNP = as.integer(SNP == lead_SNP)) %>%
+  select(SNP, POS, r2, PIP, Lead_SNP)
+
+p_EUR <- gwas_plot_fun(EUR_GWAS, "All of Us EA", "-log10(P-value)", -log10(5e-8)) + drop_guides + theme(legend.position = "none")
+p_AFR <- gwas_plot_fun(AFR_GWAS, "All of Us BA", "-log10(P-value)", -log10(5e-8)) + drop_guides + theme(legend.position = "none")
+
+# Fine-mapping panels
+p_MESuSiE    <- finemap_plot_fun(make_plot_data(candidate_region, "r2_EUR", "MESuSiE_PIP_Either",    "MESuSiE_cat",      lead_SNP), "MESuSiE",    "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+p_Paintor    <- finemap_plot_fun(make_plot_data(candidate_region, "r2_EUR", "Paintor_PIP_Either",    "Paintor_cat",      lead_SNP), "Paintor",    "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+p_MFD        <- finemap_plot_fun(make_plot_data(candidate_region, "r2_EUR", "PIP_Either",            "MFD_cat",          lead_SNP), "MFD",        "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+p_SuSiE_meta <- finemap_plot_fun(make_plot_data(candidate_region, "r2_EUR", "SuSiE_merged_PIP_Either","SuSiE_merged_cat",lead_SNP), "SuSiE Meta", "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+
+# Gene track
+plot.range <- range(candidate_region$POS)
+gene_sub   <- Gene_List %>%
+  filter(Chrom == paste0("chr", unique(candidate_region$CHR)),
+         Start < max(candidate_region$POS), End > min(candidate_region$POS),
+         Coding == "proteincoding", !is.na(cdsLength), GeneLength > 10000)
+p_gene <- gene_range_plot_fun(gene_sub, plot.range)
+
+# Combined figure
+(p_EUR / p_MESuSiE / p_Paintor / p_gene + plot_layout(heights = c(1,1,1,1)) |
+ p_AFR / p_MFD    / p_SuSiE_meta / p_gene + plot_layout(heights = c(1,1,1,1))) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+### Result Interpretation
+
+* **Top Row (GWAS):** Raw association signals for EA (left) and AA (right). Dashed line = genome-wide significance ($5 \times 10^{-8}$).
+* **Middle Rows (Fine-mapping):** PIP comparison across MESuSiE, Paintor, MFD, and SuSiE Meta. *SuSiE Meta* applies `susie_rss` to the inverse-variance weighted meta-analysis ($L=1$) without LD.
+* **Bottom Row (Gene Context):** Genomic position of *CACNA1D* relative to the signals.
+
+**Key Takeaway:** MFD identifies a lead signal in the AA cohort involving a variant that is polymorphic only in AA and monomorphic in EA. By retaining these population-specific variants, MFD provides a more comprehensive map of the genetic architecture at ***CACNA1D***.
+
+---
+
+## Example 2: Joint Modeling Improves Power at *FES* (Locus 31)
+
+Locus 31 (lead variant **rs4932179**) illustrates how joint multi-ancestry modeling can improve fine-mapping resolution. MFD determines that no significant ancestry-specific variants are present and employs joint modeling (MESuSiE), successfully concentrating PIP onto cross-ancestry causal variants with higher confidence than meta-analysis-based approaches.
+
+```{r locus31, message=FALSE, warning=FALSE, fig.height=9, fig.width=8}
+LD_BLOCK <- 31
+lead_SNP <- "rs4932179"
+
+EU_cov <- as.matrix(fread(paste0(data_dir, "eur_loci_", LD_BLOCK, ".ld")))
+BB_cov <- as.matrix(fread(paste0(data_dir, "afr_loci_", LD_BLOCK, ".ld")))
+
+candidate_region <- res_all %>%
+  filter(Region == LD_BLOCK) %>%
+  mutate(
+    r2_EUR = get_ld_vec(EU_cov, lead_SNP)[as.character(SNP)],
+    r2_AFR = get_ld_vec(BB_cov, lead_SNP)[as.character(SNP)],
+    r2_EUR = ifelse(is.na(r2_EUR), 0, r2_EUR),
+    r2_AFR = ifelse(is.na(r2_AFR), 0, r2_AFR),
+    Z_eur  = coalesce(Z_eur, 0),
+    Z_afr  = coalesce(Z_afr, 0),
+    POS    = as.numeric(POS)
+  ) %>%
+  assign_cats()
+
+# GWAS panels
+EUR_GWAS <- candidate_region %>%
+  mutate(r2 = r2_EUR, PIP = -log10(2*pnorm(-abs(Z_eur))), Lead_SNP = as.integer(SNP == lead_SNP)) %>%
+  select(SNP, POS, r2, PIP, Lead_SNP)
+AFR_GWAS <- candidate_region %>%
+  mutate(r2 = r2_AFR, PIP = -log10(2*pnorm(-abs(Z_afr))), Lead_SNP = as.integer(SNP == lead_SNP)) %>%
+  select(SNP, POS, r2, PIP, Lead_SNP)
+
+p_EUR <- gwas_plot_fun(EUR_GWAS, "All of Us EA", "-log10(P-value)", -log10(5e-8)) + drop_guides + theme(legend.position = "none")
+p_AFR <- gwas_plot_fun(AFR_GWAS, "All of Us BA", "-log10(P-value)", -log10(5e-8)) + drop_guides + theme(legend.position = "none")
+
+# Fine-mapping panels with rs10744783 shown in the combined-signal category
+mesusie_data <- make_plot_data(candidate_region, "r2_EUR", "MESuSiE_PIP_Either", "MESuSiE_cat", lead_SNP)
+mesusie_data[mesusie_data$SNP == "rs10744783", "cat"] <- "Paintor"
+
+p_MESuSiE    <- finemap_plot_fun(mesusie_data, "MESuSiE", "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+p_Paintor    <- finemap_plot_fun(make_plot_data(candidate_region, "r2_EUR", "Paintor_PIP_Either",     "Paintor_cat",       lead_SNP), "Paintor",    "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+p_MFD        <- finemap_plot_fun(make_plot_data(candidate_region, "r2_EUR", "PIP_Either",             "MFD_cat",           lead_SNP), "MFD",        "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+p_SuSiE_meta <- finemap_plot_fun(make_plot_data(candidate_region, "r2_EUR", "SuSiE_merged_PIP_Either","SuSiE_merged_cat",  lead_SNP), "SuSiE Meta", "PIP", 0.5) + drop_guides + theme(legend.position = "none")
+
+# Gene track
+plot.range <- range(candidate_region$POS)
+gene_sub   <- Gene_List %>%
+  filter(Chrom == paste0("chr", unique(candidate_region$CHR)),
+         Start < max(candidate_region$POS), End > min(candidate_region$POS),
+         Coding == "proteincoding", !is.na(cdsLength), GeneLength > 10000)
+p_gene <- gene_range_plot_fun(gene_sub, plot.range)
+
+# Combined figure
+(p_EUR / p_MESuSiE / p_Paintor / p_gene + plot_layout(heights = c(1,1,1,1)) |
+ p_AFR / p_MFD    / p_SuSiE_meta / p_gene + plot_layout(heights = c(1,1,1,1))) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+### Result Interpretation
+
+* **Top Row (GWAS):** Raw association signals for EA (left) and AA (right). Dashed line = genome-wide significance ($5 \times 10^{-8}$).
+* **Middle Rows (Fine-mapping):** PIP comparison across MESuSiE, Paintor, MFD, and SuSiE Meta. *SuSiE Meta* applies `susie_rss` to the inverse-variance weighted meta-analysis ($L=1$) without LD.
+* **Bottom Row (Gene Context):** Genomic position of *FES* relative to the signals.
+
+**Key Takeaway:** At the ***FES*** locus, MFD achieves higher PIP confidence (> 0.5) for cross-ancestry variants by borrowing strength across populations, outperforming meta-analysis-based SuSiE in fine-mapping resolution.

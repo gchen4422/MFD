@@ -1,0 +1,54 @@
+---
+title: "Multi-ancestry Fine-mapping Decision (MFD) Strategy"
+author: "Guangxin Chen"
+date: "2026-08-24"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+## What is Fine-mapping?
+
+When a genome-wide association study (GWAS) identifies a genomic region associated with a trait, it typically flags many nearby variants that are correlated with each other due to **linkage disequilibrium (LD)**, which is the tendency of nearby DNA variants to be inherited together. **Fine-mapping** is the statistical step that goes further and asks: *which specific variant(s) in this region are most likely to be truly causal?*
+
+Studying multiple ancestries simultaneously helps fine-mapping in two ways:
+
+- Different ancestry groups have different LD patterns, helping to distinguish the true causal variant from its correlated neighbors.
+- Some variants are only present (polymorphic) in certain populations. These **ancestry-specific variants** can only be detected if each ancestry is analyzed appropriately.
+
+## MFD Overview
+
+![](MFD_flowchart.png)
+
+MFD automatically decides the best multi-ancestry fine-mapping strategy for each genomic region based on the genetic architecture of that locus. It chooses between two approaches:
+
+1. **Joint modeling (MESuSiE path):** When the causal variant is likely a cross-ancestry variant, MFD analyzes all ancestries together. This borrows statistical strength across populations and uses differences in LD to sharpen the signal.
+
+2. **Post-hoc integration (SuSiE post-hoc path):** When a variant is only present in one ancestry group, joint modeling would miss it (since only variants common to all groups can be jointly analyzed). MFD instead runs fine-mapping separately within each ancestry, then combines the results using a consensus measure of LD across populations.
+
+## How MFD Decides
+
+MFD applies a simple three-step logic to choose the right approach for each locus:
+
+### Step 1: Are there ancestry-specific variants driving the signal?
+
+Some variants are present in one or a subset of ancestry groups but absent from at least one other group. If such a variant reaches genome-wide significance ($P < 5 \times 10^{-8}$) in an ancestry where it is present, MFD flags it as an **ancestry-specific variant (AS-V)**.
+
+* **No AS-Vs detected** → Use **joint modeling (MESuSiE)**. The signal is likely a cross-ancestry signal, and joint modeling gives the best resolution.
+
+### Step 2: Is the ancestry-specific variant independent of the cross-ancestry signal?
+
+If AS-Vs are present, MFD checks whether they are correlated with the main cross-ancestry signal using $r^2$ (a measure of LD, ranging from 0 = no correlation to 1 = perfect correlation).
+
+* **$r^2 < 0.6$** → The AS-V is likely an independent signal, not in strong correlation with the cross-ancestry signal. Use **post-hoc integration (SuSiE post-hoc)** to make sure it is captured.
+
+### Step 3: Is the cross-ancestry signal strong enough across all ancestries?
+
+If the AS-V is highly correlated with the cross-ancestry signal ($r^2 \geq 0.6$), MFD checks whether the cross-ancestry signal is genome-wide significant in every ancestry:
+
+* **Significant in all ancestries** → The AS-V is likely just tagging the cross-ancestry signal due to LD. Use **joint modeling (MESuSiE)**.
+* **Not significant in all ancestries** → The pattern is more complex and the AS-V may reflect a real population-specific effect. Use **post-hoc integration (SuSiE post-hoc)** to avoid missing it.
+
+> **Note**: Our software is intended strictly for research purposes. We firmly stand against any form of racial discrimination and advocate for the ethical use of MFD.

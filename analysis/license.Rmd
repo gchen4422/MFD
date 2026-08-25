@@ -1,0 +1,14 @@
+---
+title: "License"
+author: "Guangxin Chen"
+date: "2026-08-24"
+output:
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+
+# License
+
+The [MFD R package](https://github.com/gchen4422/MFD) is distributed under the GNU General Public License version 3 (GPL-3), as specified in the package `DESCRIPTION` file.

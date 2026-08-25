@@ -1,0 +1,412 @@
+---
+title: "Data Preparation"
+author: "Guangxin Chen"
+date: "2026-08-24"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+
+# Data Preparation for MFD
+
+> **Note:** This guideline details the data preprocessing steps required to standardize GWAS summary statistics and reference LD panels for the Multi-ancestry Fine-mapping Decision (MFD) strategy
+
+## Overview of the Pipeline
+
+We provide a streamlined pipeline to prepare input data for MFD, using  **All of Us (AoU)** GWAS summary statistics from European Americans and African Americans as examples. The process involves several key stages:
+
+1. **GWAS Harmonization:** QC and filtering.
+2. **LD Reference Construction:** Extracting matched genotype data from 1000 Genomes (1KG, GRCh38).
+3. **LD Mismatch Detection:** Iterative pruning of variants with inconsistent LD patterns using `kriging_rss`.
+
+
+
+### 1. GWAS Harmonization
+
+**Goal:** Standardize summary statistics from different ancestries (e.g., EUR and AFR) to a common reference panel (e.g. 1000 Genome).
+
+We recommend removing **strand-ambiguous SNPs**, **multi-allelic variants**, **variants within the MHC region**, and variants with **minor allele frequency (MAF) < 0.001**. These quality-control steps can be performed using the `GWAS_QC` function, which requires the following summary statistic columns: `CHR`, `POS`, `REF`, `ALT`, and `MAF`. The MAF threshold is user-defined and can be adjusted as needed.
+
+Importantly, unlike joint-modeling approach like MESuSiE, we **do not restrict to the intersection of SNPs between EUR and AFR at this stage**. Instead, we retain ancestry-specific variants from each group, preserving information that is critical for the *SuSiE post-hoc* branch of the MFD strategy.
+
+```{r, eval=FALSE}
+library(data.table)
+library(tidyverse)
+source("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/format_summary_stats/utility.R")
+
+ref = fread("/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/1kg_afr_maf_unrelated_biallelic_nodup_extracted.bim")
+colnames(ref) = c("CHR","SNP","CM","POS","ALT","REF")
+ref <- GWAS_QC(ref, 0.01)  # Do maf qc, remove strand Ambiguous Variants, Remove Multi-allelic Variants, Remove Indel and MHC region SNPs
+
+
+afr_file = "/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/DBP_v8_GWAS_afr_regenie_results_From5_20250417_combined_format_noMHC.csv.gz"
+
+eur_file = "/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/DBP_v8_GWAS_eur_regenie_results_From5_20250417_combined_format_noMHC.csv.gz"
+
+# Read AFR summary stats
+afrdata <- fread(afr_file)
+colnames(afrdata)[which(colnames(afrdata) == "BP")] <- "POS"
+colnames(afrdata)[which(colnames(afrdata) == "A1")] <- "ALT"  # This is the effective allele from hail table allele2, see https://saigegit.github.io/SAIGE-doc/docs/single_step2.html
+colnames(afrdata)[which(colnames(afrdata) == "A2")] <- "REF"  # Reference allele
+colnames(afrdata)[which(colnames(afrdata) == "FRQ")] <- "MAF" # With respect to A1
+
+# Perform QC and filtering
+afrdata_qced <- GWAS_QC(afrdata, 0.01)  # Do maf qc, remove strand Ambiguous Variants, Remove Multi-allelic Variants, Remove Indel and MHC region SNPs
+afrdata_qced_tidy <- afrdata_qced %>% 
+    filter(CHR %in% 1:22) %>% 
+    #filter(MISSINGRATE <= 0.01) %>% 
+    filter(CHR_POS %in% ref$CHR_POS) %>% arrange(CHR,POS) %>% select(-CHISQ)
+  
+# Read EUR summary stats
+eurdata <- fread(eur_file)
+colnames(eurdata)[which(colnames(eurdata) == "BP")] <- "POS"
+colnames(eurdata)[which(colnames(eurdata) == "A1")] <- "ALT"
+colnames(eurdata)[which(colnames(eurdata) == "A2")] <- "REF"
+colnames(eurdata)[which(colnames(eurdata) == "FRQ")] <- "MAF" 
+
+  
+# Perform QC and filtering
+eurdata_qced <- GWAS_QC(eurdata, 0.01) 
+eurdata_qced_tidy <- eurdata_qced %>% 
+    filter(CHR %in% 1:22) %>% 
+    #filter(MISSINGRATE <= 0.01) %>% 
+    filter(CHR_POS %in% ref$CHR_POS)  %>% arrange(CHR,POS) %>% select(-CHISQ)
+
+
+afrdata_qced_tidy$SNP = ref$SNP[match(afrdata_qced_tidy$CHR_POS,ref$CHR_POS)] #Map to rsid in 1kg
+eurdata_qced_tidy$SNP = ref$SNP[match(eurdata_qced_tidy$CHR_POS,ref$CHR_POS)] #Map to rsid in 1kg
+
+common_snp_ref_eur <- find_common_snps(eurdata_qced_tidy, ref)
+common_snp_ref_afr <- find_common_snps(afrdata_qced_tidy, ref)
+  
+eurdata_qced_tidy = eurdata_qced_tidy %>% filter(CHR_POS %in% common_snp_ref_eur) #Keep SNPs present in the reference panel
+afrdata_qced_tidy = afrdata_qced_tidy %>% filter(CHR_POS %in% common_snp_ref_afr) #Keep SNPs present in the reference panel
+
+trait = "DBP"
+
+  # Write results
+fwrite(
+    eurdata_qced_tidy, 
+    file = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_EUR_GRCh38_combined_format_noMHC_to_finemap.csv"), 
+    quote = FALSE, row.names = FALSE, col.names = TRUE
+)
+  
+  
+fwrite(
+    eurdata_qced_tidy[,c(1,6)], 
+    file = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_EUR_GRCh38_combined_format_noMHC_to_finemap_ref_flip"), 
+    quote = FALSE, row.names = FALSE, col.names = FALSE,sep = " "
+  )
+  
+fwrite(
+    eurdata_qced_tidy[,c(1)], 
+    file = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_EUR_GRCh38_combined_format_noMHC_to_finemap_snplist"), 
+    quote = FALSE, row.names = FALSE, col.names = FALSE
+  )
+  
+fwrite(
+    afrdata_qced_tidy, 
+    file = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_AFR_GRCh38_combined_format_noMHC_to_finemap.csv"), 
+    quote = FALSE, row.names = FALSE, col.names = TRUE
+  )
+  
+fwrite(
+    afrdata_qced_tidy[,c(1,6)], 
+    file = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_AFR_GRCh38_combined_format_noMHC_to_finemap_ref_flip"), 
+    quote = FALSE, row.names = FALSE, col.names = FALSE,sep = " "
+  )
+  
+fwrite(
+    afrdata_qced_tidy[,c(1)], 
+    file = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_AFR_GRCh38_combined_format_noMHC_to_finemap_snplist"), 
+    quote = FALSE, row.names = FALSE, col.names = FALSE
+  )
+```
+
+
+Note that the **ALT and REF alleles need to be consistent for SNP present across ancestry groups** to ensure proper alignment. In the *All of Us* dataset, this requirement is already satisfied because the variants are pre-harmonized. For other GWAS sources (meta-analyses, mixed imputation pipelines), you may need to manually align alleles first (see [this document ](https://borangao.github.io/meSuSie_Analysis/GWAS_QC.html) for an example).
+
+
+
+### 2. Align GWAS Summary Statistics with LD Reference Panel
+
+### Goal
+
+Construct ancestry-matched LD reference genotypes from 1KG that **exactly match** the GWAS variant list **and** use the same REF/ALT orientation. This avoids sign errors in `Z-scores` and prevents spurious LD mismatch signals.
+
+### Method
+
+We use `plink2` to:
+
+* subset 1KG genotypes to your GWAS SNP list (`--extract snplist`)
+* enforce reference allele orientation (`--ref-allele ref_flip 2 1`)
+* output a new `.bed/.bim/.fam` dataset (`--make-bed`)
+
+
+```{r, eval=FALSE}
+# For EUR
+trait <- gsub(".*/(.*?)_.*", "\\1", afr_file)
+bfile = "/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/1kg_eur_maf_unrelated_biallelic_nodup_extracted"
+snplist = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_EUR_GRCh38_combined_format_noMHC_to_finemap_snplist")
+ref_flip = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_EUR_GRCh38_combined_format_noMHC_to_finemap_ref_flip")
+outfile = paste0("/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/lipids_v8/test_MF/1kg_eur_maf_unrelated_biallelic_nodup_extracted_",trait,"_flipped")
+command = paste0("~/gwas_software/plink2.0/plink2 --bfile ",bfile," --extract ",snplist ," --ref-allele ",ref_flip," 2 1 --make-bed --out ",outfile)
+t1 <- system(command, intern = TRUE)
+  
+# Extract the trait name (assuming it's consistent across AFR and EUR files)
+# For AFR
+bfile = "/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/1kg_afr_maf_unrelated_biallelic_nodup_extracted"
+outfile = paste0("/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/lipids_v8/test_MF/1kg_afr_maf_unrelated_biallelic_nodup_extracted_",trait,"_flipped")
+snplist = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_AFR_GRCh38_combined_format_noMHC_to_finemap_snplist")
+ref_flip = paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_AFR_GRCh38_combined_format_noMHC_to_finemap_ref_flip")
+command = paste0("~/gwas_software/plink2.0/plink2 --bfile ",bfile," --extract ",snplist ," --ref-allele ",ref_flip," 2 1 --make-bed --out ",outfile)
+t1 <- system(command, intern = TRUE)
+  
+```
+
+### 3. LD Reference Construction
+
+Below, we use the region spanning **58,658,279 to 59,673,534 bp on chromosome 20** as an illustrative example to construct the LD matrix and assess potential LD mismatch.
+
+
+```{r, eval=FALSE}
+library(data.table)
+library(dplyr)
+library(snpStats)
+library(MESuSiE)
+
+
+
+preprocess_data <- function(data_matrix) {
+  # Replace missing values with column means and scale columns
+  data_matrix <- apply(data_matrix, 2, function(x) {
+    x[is.na(x)] <- mean(x, na.rm = TRUE)
+    x <- scale(x)
+    return(x)
+  })
+  
+  return(data_matrix)
+}
+
+# Function to compute covariance matrix and write it to a file
+compute_cov <- function(data_matrix, file_name) {
+  # Compute the covariance matrix
+  cov_matrix <- cov2cor(crossprod(data_matrix))
+  
+  # Ensure the covariance matrix is symmetric
+  cov_matrix <- (cov_matrix + t(cov_matrix)) / 2
+  
+  # Write the covariance matrix to a file
+  fwrite(cov_matrix, file_name,sep =" ")
+}
+
+trait = "DBP"
+
+
+eur_ref = fread(paste0("/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/lipids_v8/test_MF/1kg_eur_maf_unrelated_biallelic_nodup_extracted_",trait,"_flipped.bim"))
+afr_ref = fread(paste0("/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/lipids_v8/test_MF/1kg_afr_maf_unrelated_biallelic_nodup_extracted_",trait,"_flipped.bim"))
+
+start = 58658279
+end = 59673534
+
+##we construct EUR LD reference matrix
+loci_first = eur_ref[(eur_ref$V4 >= start) & (eur_ref$V4 <= end)]
+loci = loci_first[loci_first$V1 == 20,]
+loci_snp = loci$V2
+snplist ="loci_example"
+dir.create(paste0("risk_loci_ld_eur_", trait))
+write.table(loci_snp,file = paste0(paste0("risk_loci_ld_eur_", trait,"/"),snplist), quote = FALSE, row.names=FALSE, col.names = F)
+ldname = paste0("risk_loci_ld_eur_", trait,"/loci_example")
+command = paste("~/gwas_software/plink2.0/plink2 --bfile ",paste0("/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/lipids_v8/test_MF/1kg_eur_maf_unrelated_biallelic_nodup_extracted_",trait,"_flipped")," --extract",paste0(paste0("risk_loci_ld_eur_", trait,"/"),snplist)," --allow-no-sex --make-bed --out",ldname)
+t1 <- system(command, intern = TRUE)
+    
+
+eur_plink <- read.plink(paste0(ldname,".bed"))
+eur_plink_geno <- as(eur_plink$genotypes, "numeric")
+unique_value_cols_eur <- apply(eur_plink_geno, 2, function(col) length(unique(col)) == 1) #some SNP might not be polymophisc in this region, we want to find and remove such SNPs
+unique_value_col_indices_eur <- which(unique_value_cols_eur)
+eur_mat = as.matrix(eur_plink_geno)
+eur_mat = preprocess_data(eur_mat)
+compute_cov(eur_mat, paste0(ldname,".ld"))
+snp_to_exclude_eur = c(names(unique_value_col_indices_eur))
+write.table(snp_to_exclude_eur,file = paste0(paste0("risk_loci_ld_eur_", trait,"/"),snplist,"_snp_to_exclude"), quote = FALSE, row.names=FALSE, col.names = F)
+    
+
+##we construct AFR LD reference matrix
+loci_first = afr_ref[(afr_ref$V4 >= start) & (afr_ref$V4 <= end)]
+loci = loci_first[loci_first$V1 == 20,]
+loci_snp = loci$V2
+snplist ="loci_example"
+dir.create(paste0("risk_loci_ld_afr_", trait))
+write.table(loci_snp,file = paste0(paste0("risk_loci_ld_afr_", trait,"/"),snplist), quote = FALSE, row.names=FALSE, col.names = F)
+ldname = paste0("risk_loci_ld_afr_", trait,"/loci_example")
+command = paste("~/gwas_software/plink2.0/plink2 --bfile ",paste0("/scratch/negishi/chen4422/UKBB_pheSVD-main/ukb_geno/in_sample_ld/1kg_build38/flipped_finemap_allbyall/lipids_v8/test_MF/1kg_afr_maf_unrelated_biallelic_nodup_extracted_",trait,"_flipped")," --extract",paste0(paste0("risk_loci_ld_afr_", trait,"/"),snplist)," --allow-no-sex --make-bed --out",ldname)
+t1 <- system(command, intern = TRUE)
+
+
+afr_plink <- read.plink(paste0(ldname,".bed"))
+afr_plink_geno <- as(afr_plink$genotypes, "numeric")
+unique_value_cols_afr <- apply(afr_plink_geno, 2, function(col) length(unique(col)) == 1) #some SNP might not be polymophisc in this region, we want to find and remove such SNPs
+unique_value_col_indices_afr <- which(unique_value_cols_afr)
+afr_mat = as.matrix(afr_plink_geno)
+afr_mat = preprocess_data(afr_mat)
+compute_cov(afr_mat, paste0(ldname,".ld"))
+snp_to_exclude_afr = c(names(unique_value_col_indices_afr))
+write.table(snp_to_exclude_afr,file = paste0(paste0("risk_loci_ld_afr_", trait,"/"),snplist,"_snp_to_exclude"), quote = FALSE, row.names=FALSE, col.names = F)
+  
+```
+
+
+### 4. LD Mismatch Detection
+
+A common issue in fine-mapping is the mismatch between summary statistics and the LD reference panel (e.g., due to different sample origins or sequencing errors). We use `kriging_rss` function from the `susieR` package to identify and iteratively remove SNPs where the observed Z-scores are inconsistent with the LD structure.
+
+The following script:
+
+* Loads the previously generated LD matrices and GWAS summary statistics.
+* Runs an iterative loop: if the Kriging diagnostic identifies "outlier" SNPs with high inconsistency, they are removed, and the LD matrix is recomputed.
+* Ensures that only high-confidence, harmonized SNPs remain for following fine-mapping analysis.
+
+```{r, eval=FALSE}
+library(data.table)
+library(susieR)
+library(snpStats)
+library(dplyr)
+
+# args <- as.numeric(commandArgs(TRUE))
+# i <- args[1]
+# h2_num <- args[2]
+# num_causal <- args[3]
+
+
+preprocess_data <- function(data_matrix) {
+  # Replace missing values with column means and scale columns
+  data_matrix <- apply(data_matrix, 2, function(x) {
+    x[is.na(x)] <- mean(x, na.rm = TRUE)
+    x <- scale(x)
+    return(x)
+  })
+  
+  return(data_matrix)
+}
+
+trait = "DBP"
+
+geno_dir_eur <- paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/risk_loci_ld_eur_",trait,"/")
+LD_dir_eur = geno_dir_eur
+  
+geno_dir_afr <- paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/risk_loci_ld_afr_",trait,"/")
+LD_dir_afr = geno_dir_afr
+  
+  
+afr_sumstats_sig = fread(paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_AFR_GRCh38_combined_format_noMHC_to_finemap.csv"))
+eur_sumstats_sig = fread(paste0("/scratch/negishi/chen4422/hapnest/multi-ans-sum-stats/Lipids_all_of_us_v8/formatted/test_MF_pipleline/summstats_to_finemap/", trait, "_EUR_GRCh38_combined_format_noMHC_to_finemap.csv"))
+  
+
+snplist_ori_afr = fread(paste0(geno_dir_afr,"loci_example"),header = F)%>% pull(V1)
+snp_to_exclude_path_afr <- paste0(geno_dir_afr, "loci_example_snp_to_exclude")
+    
+# Check if the file is empty
+if (file.info(snp_to_exclude_path_afr)$size > 0) {
+      # Read the file if it's not empty
+      snp_to_exclude_afr <- fread(snp_to_exclude_path_afr, header = FALSE) %>% pull(V1)
+      snplist_filtered_afr <- setdiff(snplist_ori_afr, snp_to_exclude_afr)
+} else {
+      # Handle the case where the file is empty
+      snplist_filtered_afr  = snplist_ori_afr
+}
+
+    
+## Check for LD mismatch, remove mismatched SNPs
+idx_to_remove = c()
+while(!(identical(idx_to_remove, integer(0)))){
+      
+      
+    sumstats_afr = afr_sumstats_sig %>% filter(SNP %in% snplist_filtered_afr)
+    afr_plink <- read.plink(paste0(geno_dir_afr,"loci_example.bed"))
+    afr_plink_geno <- as(afr_plink$genotypes, "numeric")
+    afr_mat = as.matrix(afr_plink_geno)
+    afr_mat <- afr_mat[, colnames(afr_mat) %in% snplist_filtered_afr]
+    afr_mat = preprocess_data(afr_mat)
+    cov_matrix_afr <- cov2cor(crossprod(afr_mat))
+    BB_cov <- (cov_matrix_afr + t(cov_matrix_afr)) / 2
+      
+    BB_diagnostic <- kriging_rss(sumstats_afr$Z, BB_cov, n = median(sumstats_afr$N))
+    print(BB_diagnostic$plot)
+    idx_to_remove_afr = BB_diagnostic$plot$plot_env$idx
+    idx_to_remove = idx_to_remove_afr
+      
+    if (!(identical(idx_to_remove, integer(0)))){
+      snplist_filtered_afr = snplist_filtered_afr[-idx_to_remove]
+    }
+      
+}
+
+```
+
+The diagnostic plots from the example analysis are shown below.
+
+<p><img src="figure/Data_prepare.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+
+<p><img src="figure/Data_prepare.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
+
+The **Kriging RSS diagnostic** detects inconsistencies between GWAS summary statistics (Z-scores) and the LD matrix from external reference panel. In the resulting diagnostic plot, SNPs are color-coded by their likelihood of being a "LD outlier" In the example above, an initial outlier was identified and subsequently removed in following iterations.
+
+We applied similar procedures to the European American group.
+```{r, eval=FALSE}
+##Similarly for EUR, Check for LD mismatch, remove mismatched SNPs
+snplist_ori_eur = fread(paste0(geno_dir_eur,"loci_",i),header = F)%>% pull(V1)
+snp_to_exclude_path_eur <- paste0(geno_dir_eur, "loci_", i, "_snp_to_exclude")
+    
+# Check if the file is empty
+if (file.info(snp_to_exclude_path_eur)$size > 0) {
+      # Read the file if it's not empty
+      snp_to_exclude_eur <- fread(snp_to_exclude_path_eur, header = FALSE) %>% pull(V1)
+      snplist_filtered_eur <- setdiff(snplist_ori_eur, snp_to_exclude_eur)
+} else {
+      # Handle the case where the file is empty
+      snplist_filtered_eur  = snplist_ori_eur
+}
+    
+    
+
+##Check for LD mismatch, remove mismatched SNPs
+idx_to_remove = c()
+while(!(identical(idx_to_remove, integer(0)))){
+      
+    sumstats_eur = eur_sumstats_sig %>% filter(SNP %in% snplist_filtered_eur)
+    
+    eur_plink <- read.plink(paste0(geno_dir_eur,"loci_",i,".bed"))
+    eur_plink_geno <- as(eur_plink$genotypes, "numeric")
+    eur_mat = as.matrix(eur_plink_geno)
+    eur_mat <- eur_mat[, colnames(eur_mat) %in% snplist_filtered_eur]
+    eur_mat = preprocess_data(eur_mat)
+    cov_matrix_eur <- cov2cor(crossprod(eur_mat))
+    EU_cov <- (cov_matrix_eur + t(cov_matrix_eur)) / 2
+      
+    EU_diagnostic <- kriging_rss(sumstats_eur$Z, EU_cov, n = median(sumstats_eur$N))
+    idx_to_remove_eur = EU_diagnostic$plot$plot_env$idx
+    idx_to_remove = idx_to_remove_eur
+      
+    if (!(identical(idx_to_remove, integer(0)))){
+      snplist_filtered_eur = snplist_filtered_eur[-idx_to_remove]
+    }
+      
+    gc()
+      
+}
+    
+### Prepare the common-SNP subset required by MESuSiE
+### Begin evaluation of marginal ancestry-specific signals
+    
+    
+    
+    
+fwrite(sumstats_afr,file = paste0(data_dir,"afr_loci_",i,"_summ"), quote = FALSE, row.names=FALSE, col.names = T)
+fwrite(sumstats_eur,file = paste0(data_dir,"eur_loci_",i,"_summ"), quote = FALSE, row.names=FALSE, col.names = T)
+    
+fwrite(BB_cov, paste0(data_dir,"afr_loci_",i,".ld"),sep =" ")
+fwrite(EU_cov, paste0(data_dir,"eur_loci_",i,".ld"),sep =" ")
+    
+```

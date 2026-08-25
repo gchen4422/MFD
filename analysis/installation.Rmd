@@ -1,0 +1,24 @@
+---
+title: "Installation"
+author: "Guangxin Chen"
+date: "2026-08-24"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+# Installation of MFD
+
+MFD depends on [MESuSiE](https://github.com/borangao/MESuSiE), which must be installed manually from GitHub before installing MFD. All other dependencies (`susieR`, `data.table`, `dplyr`, `tidyr`) are available on CRAN and will be installed automatically.
+
+## Step 1: Install MESuSiE
+
+```r
+devtools::install_github("borangao/MESuSiE")
+```
+
+## Step 2: Install MFD
+
+```r
+devtools::install_github("gchen4422/MFD")
+```

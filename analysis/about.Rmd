@@ -1,0 +1,30 @@
+---
+title: "Multi-ancestry Fine-mapping Decision (MFD) strategy"
+author: "Guangxin Chen"
+date: "2026-08-24"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+# Introduction to MFD
+The Multi-ancestry Fine-mapping Decision (MFD) is an empirical decision framework that selects between existing fine-mapping strategies according to locus-level summary-statistic characteristics. Rather than introducing a new statistical model, MFD provides a practical rule for choosing between a joint multi-ancestry approach (MESuSiE) and post-hoc integration of single-ancestry results (SuSiE post-hoc).
+
+## MFD Overview
+The MFD framework dynamically selects the fine-mapping strategy based on locus-level architecture. It evaluates the presence of significant ancestry-specific variants and their LD relationship with cross-ancestry signals to choose between two paths:
+
+1.  **MESuSiE Path:** Used when signals are predominantly cross-ancestry. It jointly models the ancestry data to increase power and resolution.
+2.  **SuSiE post-hoc Path:** Used when independent ancestry-specific signals are detected. It runs SuSiE independently in each ancestry and merges the results using a consensus LD matrix ($r_{either} = \max_k |r_k|$) to cluster signals.
+
+![](MFD_flowchart.png)
+
+## MFD Strategy 
+First, we assessed the significance of ancestry-specific variants within the locus. We defined a significant ancestry-specific variant as a variant that is polymorphic in one or a subset of ancestries, absent from at least one other ancestry, and genome-wide significant ($P < 5\times10^{-8}$) in an ancestry where it is present. If no significant ancestry-specific variants were detected, suggesting a predominantly cross-ancestry or null signal, MFD used MESuSiE.
+
+If significant ancestry-specific variants were present, we evaluated their LD patterns to distinguish ancestry-specific signals from differential tagging. An ancestry-specific variant was classified as being in high LD with a cross-ancestry proxy when $r^2 \geq 0.6$ in every ancestry where the ancestry-specific variant was significant. Variants without such a proxy were analyzed using SuSiE post-hoc integration.
+
+Finally, for ancestry-specific variants with a high-LD cross-ancestry proxy, MFD checks whether that proxy is genome-wide significant in every ancestry. MFD uses MESuSiE when all significant ancestry-specific variants are explained by such proxies; otherwise, it uses SuSiE post-hoc integration.
+

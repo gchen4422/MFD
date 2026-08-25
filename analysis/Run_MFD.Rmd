@@ -1,0 +1,184 @@
+---
+title: "Run MFD"
+author: "Guangxin Chen"
+date: "2026-08-24"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+# MFD Example
+
+
+## 1. Data Formatting for MFD
+
+The two-ancestry MFD interface accepts two harmonized GWAS dataframes and their corresponding linkage disequilibrium (LD) matrices. The general interface for three or more ancestries is shown in Section 5.
+
+### 1.1 Required Inputs
+
+* **`gwas_1` & `gwas_2`**: Dataframes containing summary statistics for Population 1 and Population 2, respectively.
+* **`ld_1` & `ld_2`**: Numeric LD matrices (correlation matrices) corresponding exactly to the SNPs in `gwas_1` and `gwas_2`.
+    * *Note:* The row and column names of these matrices need to match the `SNP` IDs in your GWAS dataframes.
+* **`pop_names`**: A character vector of length 2 specifying the names of the populations (e.g., `c("EUR", "AFR")`).
+
+
+
+### 1.2 Column Specifications (for `gwas_1` & `gwas_2`)
+
+Ensure your dataframes contain the following columns. The column names are case-sensitive.
+
+| Column Name | Status | Description |
+| :--- | :--- | :--- |
+| **`SNP`** | **Required** | The unique variant identifier (e.g., rsID or `chr:pos`). Must correspond to the matching LD input. |
+| **`CHR`** | **Required** | Chromosome number (numeric or character, e.g., `1`, `"chr1"`). |
+| **`POS`** | **Required** | Base pair position (numeric). |
+| **`Z`** | **Required** | Z-score of the variant effect size ($Beta / Se$). |
+| **`Beta`** | **Required** | Effect size (log-odds ratio for binary traits or linear regression coefficient for quantitative traits). |
+| **`Se`** | **Required** | Standard error of the effect size. |
+| **`N`** | **Required** | Sample size for the variant. |
+| **`PVAL`** | **Required** | P-value used by the MFD decision rule. |
+
+```{r,message=FALSE, warning=FALSE}
+library(MFD)
+library(dplyr)
+library(susieR)
+
+# Load built-in example data (chr6 locus, EUR and AFR cohorts)
+data(summary_stat_1)
+data(summary_stat_2)
+data(susie_EU_cov)
+data(susie_BB_cov)
+head(summary_stat_1)
+str(susie_EU_cov)
+```
+
+## 2. Run MFD
+```{r,message=FALSE, warning=FALSE}
+mfd_result = run_mf_decision_2pop(summary_stat_1,summary_stat_2,susie_EU_cov,susie_BB_cov, pop_names = c("EUR", "AFR"))
+```
+
+The output of `run_mf_decision` is a list containing three elements: `decision` (the method logic used), `results` (the main data frame), and `raw_objects` (the underlying model outputs from either MESuSiE or SuSiE).
+
+The key interpretations focus on the **95% Credible Sets (CS)** and **Posterior Inclusion Probabilities (PIPs)** found in the `results` data frame.
+
+### 2.1 95% Credible Sets (CS)
+
+The `CS` column represents the "Either" Credible Set, which is a group of SNPs that, with 95% probability, contains at least one causal variant active in **either** analyzed population.
+
+* **`CS` values**: `CS = 0` means the SNP is not in an "Either" Credible Set; positive values (`1`, `2`, ...) identify the Credible Set. In this example, only `0` and `1` appear because one Credible Set was detected.
+* **Ancestry-Specific CS**: The columns `CS_Ancestry_1` and `CS_Ancestry_2` indicate if a SNP is part of a Credible Set specific to one population (derived from SuSiE or MESuSiE decomposition).
+
+### 2.2 Posterior Inclusion Probabilities (PIPs)
+
+MFD provides multiple PIP metrics to help you distinguish between cross-ancestry and ancestry-specific signals. A common threshold to declare a "fine-mapped signal" is `PIP > 0.5`.
+
+* **`PIP_Either`**: The probability that the SNP is causal in **at least one** ancestry. This is the primary metric for discovery.
+* **`PIP_Shared`**: The probability that the SNP is causal in **both** ancestries.
+* **`PIP_Ancestry_1 / PIP_Ancestry_2`**: The probability that the SNP is causal specifically in Population 1 or Population 2.
+
+### 2.3 Example Code for Analysis
+
+You can use the following R code to filter and interpret the significant findings from your results:
+
+```{r,message=FALSE, warning=FALSE}
+# Extract the formatted results dataframe
+res_df <- mfd_result$results
+
+# A. Identify SNPs in the 95% Credible Set
+# Retain SNPs assigned to any credible set
+credible_set_snps <- res_df %>% filter(CS > 0)
+print(credible_set_snps)
+
+# B. Identify Discovery Signals (PIP > 0.5)
+# SNPs likely to be causal in at least one population
+discovery_snps <- res_df %>% filter(PIP_Either > 0.5)
+
+# C. Distinguish cross-ancestry and ancestry-specific effects
+interpretation <- discovery_snps %>%
+  mutate(Type = case_when(
+    PIP_Shared > 0.5 ~ "Cross-Ancestry Signal",
+    PIP_Ancestry_1 > 0.5 ~ "Ancestry 1 Specific",
+    PIP_Ancestry_2 > 0.5 ~ "Ancestry 2 Specific",
+    TRUE ~ "Ambiguous / Low Confidence"
+  )) %>%
+  select(SNP, PIP_Either, PIP_Shared, PIP_Ancestry_1, PIP_Ancestry_2, Type)
+
+print(interpretation)
+
+```
+
+**Interpretation Logic:**
+
+* If `PIP_Shared` is high, the variant is likely a cross-ancestry causal variant.
+* If `PIP_Ancestry_1` is high but `PIP_Shared` is low, the variant is likely specific to the first population.
+
+
+
+## 3. Configuring Tuning Parameters
+
+When running `run_mf_decision`, several tuning parameters can be adjusted to refine the model's behavior, the decision logic, and the final clustering of signals.
+
+### 3.1 Model Configuration
+
+These parameters control the underlying fine-mapping models (SuSiE and MESuSiE).
+
+* **Number of Effects (`L`)**: Specifies the maximum number of causal effects to consider in the region (Default: `10`).
+* **Prior Weights (`prior_weights`)**: Represents the prior probability of a specific SNP being causal. Users can supply a custom vector to incorporate functional annotations.
+* **Ancestry Weight (`ancestry_weight`)**: Configures the weighting for different ancestries during multi-ancestry fine-mapping (see [MESuSiE documentation](https://borangao.github.io/meSuSie_Analysis/Run_MESuSiE.html) for details).
+
+### 3.2 Decision Logic Thresholds
+
+These parameters control the `decide_finemapping_method` function, determining whether MFD switches to **MESuSiE** (for cross-ancestry signals) or **SuSiE post-hoc** (for ancestry-specific signals).
+
+* **Significance Threshold (`p_thresh`)**: The P-value threshold (Default: `5e-8`) used to identify significant Ancestry-Specific Variants (AS-Vs) and cross-ancestry variants.
+* **LD Threshold (`r2_thresh`)**: The LD threshold (Default: `0.6`) used for two distinct purposes:
+    1. **Method Decision:** It determines whether an Ancestry-Specific Variant is in high LD with a cross-ancestry signal. If $r^2 \geq 0.6$, MFD checks whether the cross-ancestry signal is genome-wide significant in all ancestries and uses MESuSiE only when it is.
+    2. **Signal Merging:** In the **SuSiE post-hoc** mode, this threshold controls the "tightness" of the merged "Either" Credible Sets. The function dynamically calculates a clustering height cutoff using complete linkage, ensuring SNPs are only merged into the same signal cluster if their pairwise correlation exceeds this threshold. Raising this value forces strictly tight clusters; lowering it allows looser signals to merge.
+
+## 4. MFD Visualization
+
+Since MFD returns the raw model objects within its output list (`$raw_objects`), you can visualize the results using the native plotting functions available in `susieR` or `MESuSiE`.
+
+For more advanced, multi-ancestry visualizations, we provide a custom plotting function in the **Real Data Example** section.
+
+In the example below (where MFD selected "SuSiE post-hoc"), we can visualize the PIPs for each population individually:
+
+```{r,message=FALSE, warning=FALSE}
+susie_plot(mfd_result$raw_objects$susie_list$EUR, y = "PIP",
+           main = "Fine-mapping results for EUR")
+
+# Plot AFR results
+susie_plot(mfd_result$raw_objects$susie_list$AFR, y = "PIP",
+           main = "Fine-mapping results for AFR")
+
+```
+
+## 5. Run MFD with Three or More Ancestries
+
+For three or more ancestries, provide the GWAS summary statistics and matching LD matrices as named lists. The names and ordering of `gwas_list` and `ld_list` must agree.
+
+Each element of `gwas_list` uses the same summary-statistics format described above for the two-ancestry case. Each element of `ld_list` is a square SNP-by-SNP LD correlation matrix matched to the corresponding GWAS table, with variants in the same order.
+
+```{r, eval=FALSE}
+gwas_list <- list(
+  EUR = summary_stat_eur,
+  AFR = summary_stat_afr,
+  EAS = summary_stat_eas
+)
+
+ld_list <- list(
+  EUR = ld_eur,
+  AFR = ld_afr,
+  EAS = ld_eas
+)
+
+mfd_result <- run_mf_decision(
+  gwas_list = gwas_list,
+  ld_list = ld_list
+)
+
+mfd_result$decision
+head(mfd_result$results)
+```
+
+For K ancestries, `mfd_result$results` has the same general format as in the two-ancestry case, with ancestry-specific columns named `PIP_Ancestry_1` through `PIP_Ancestry_K` and `CS_Ancestry_1` through `CS_Ancestry_K`. Their ordering follows the ancestry names in `gwas_list`.

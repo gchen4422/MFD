@@ -1,0 +1,28 @@
+name: "MF_benchmarking_MFD"
+output_dir: ../docs
+navbar:
+  title: "MFD"
+  left:
+  - text: Home
+    href: index.html
+  - text: Installation
+    href: installation.html
+  - text: Run MFD
+    href: Run_MFD.html
+  - text: AOU Example
+    menu:
+    - text: Data Preparation
+      href: Data_prepare.html
+    - text: Real Data Example
+      href: AOU_example.html
+  right:
+  - text: Source Code
+    icon: fa-github
+    href: https://github.com/gchen4422/MFD
+
+output:
+  workflowr::wflow_html:
+    toc: yes
+    toc_float: yes
+    theme: cosmo
+    highlight: textmate
