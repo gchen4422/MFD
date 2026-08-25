@@ -7,7 +7,7 @@ Description: Adaptively selects between joint and post-hoc multi-ancestry
     fine-mapping strategies based on locus-level genetic architecture.
     Given GWAS summary statistics and LD matrices for two or more ancestry
     groups, MFD applies a decision rule to choose between MESuSiE
-    (joint modeling) and SuSiE post-hoc (per-ancestry modeling), and
+    (joint modeling) and SuSiE post-hoc (post-hoc integration), and
     returns per-SNP posterior inclusion probabilities (PIPs) and credible sets.
 License: GPL-3
 URL: https://github.com/gchen4422/MFD

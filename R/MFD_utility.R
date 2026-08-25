@@ -205,7 +205,7 @@ utils::globalVariables(c(":=", "ALT", "Beta", "MAF", "PVAL", "REF", "SNP", "Z"))
 #' Uses ancestry-specific significant variants and LD relationships to choose
 #' between joint and post-hoc fine-mapping strategies.  Each significant AS-SV
 #' is evaluated jointly across all its signal-bearing ancestries: a single
-#' K-way shared proxy must be in high LD in **every** ancestry where the AS-SV
+#' cross-ancestry proxy must be in high LD in **every** ancestry where the AS-SV
 #' is significant.
 #'
 #' @param gwas_list Named list of K GWAS summary statistics data frames.
@@ -373,7 +373,7 @@ decide_finemapping_method <- function(
     return(list(
       method      = "SuSiE post-hoc",
       reason_code = 2L,
-      reason      = "AS-SV significant, but no high-LD K-way shared proxy found",
+      reason      = "AS-SV significant, but no high-LD cross-ancestry proxy found",
       diagnostics = diagnostics
     ))
   }
@@ -382,7 +382,7 @@ decide_finemapping_method <- function(
     return(list(
       method      = "MESuSiE",
       reason_code = 3L,
-      reason      = "All significant AS-SVs explained by shared SNPs significant in all ancestries",
+      reason      = "All significant AS-SVs explained by cross-ancestry SNPs significant in all ancestries",
       diagnostics = diagnostics
     ))
   }
@@ -390,7 +390,7 @@ decide_finemapping_method <- function(
   list(
     method      = "SuSiE post-hoc",
     reason_code = 4L,
-    reason      = "Some significant AS-SVs lack a globally significant shared proxy",
+    reason      = "Some significant AS-SVs lack a globally significant cross-ancestry proxy",
     diagnostics = diagnostics
   )
 }

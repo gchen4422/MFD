@@ -39,6 +39,6 @@ and \code{classification = "untagged"}.}
 Uses ancestry-specific significant variants and LD relationships to choose
 between joint and post-hoc fine-mapping strategies.  Each significant AS-SV
 is evaluated jointly across all its signal-bearing ancestries: a single
-K-way shared proxy must be in high LD in \strong{every} ancestry where the AS-SV
+cross-ancestry proxy must be in high LD in \strong{every} ancestry where the AS-SV
 is significant.
 }

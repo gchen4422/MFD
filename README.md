@@ -10,7 +10,7 @@
 
 MFD chooses between two fine-mapping paths using a three-step decision rule:
 
-1. **No significant ancestry-specific segregating variants (AS-SVs)?** → Use **MESuSiE** (joint modeling leverages shared LD structure for higher resolution)
+1. **No significant ancestry-specific segregating variants (AS-SVs)?** → Use **MESuSiE** (joint modeling leverages cross-ancestry information for higher resolution)
 2. **Significant AS-SVs with low LD to cross-ancestry signals (r² < 0.6)?** → Use **SuSiE post-hoc** (runs SuSiE independently per ancestry, then merges with a consensus LD matrix)
 3. **Significant AS-SVs in high LD with cross-ancestry signals?** → Use **MESuSiE** if the cross-ancestry signal is genome-wide significant in all ancestries; otherwise **SuSiE post-hoc**
 
@@ -93,10 +93,11 @@ K=2 analysis is a special case of this general K-ancestry input.
 | `SNP`  | Yes | Variant ID (rsID or chr:pos); must match LD matrix names |
 | `CHR`  | Yes | Chromosome |
 | `POS`  | Yes | Base-pair position |
-| `Z`    | Yes | Z-score (Beta / Se) |
-| `Beta` | Optional | Effect size |
-| `Se`   | Optional | Standard error |
-| `N`    | Optional | Sample size |
+| `Z`    | Yes | Z-score (`Beta / Se`) |
+| `Beta` | Yes | Effect size |
+| `Se`   | Yes | Standard error |
+| `N`    | Yes | Sample size |
+| `PVAL` | Yes | P-value used by the MFD decision rule |
 
 ### Output (`result$results`)
 
@@ -115,7 +116,7 @@ A common threshold to declare a fine-mapped signal is `PIP_Either > 0.5`.
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `L` | `10` | Maximum number of causal effects per region |
-| `p_thresh` | `5e-8` | P-value threshold to define significant AS-SVs and shared variants |
+| `p_thresh` | `5e-8` | P-value threshold to define significant AS-SVs and cross-ancestry variants |
 | `r2_thresh` | `0.6` | LD threshold for the decision rule and post-hoc CS merging |
 | `prior_weights` | `NULL` | Per-SNP prior probability (e.g., from functional annotations) |
 | `ancestry_weight` | `NULL` | Ancestry weights passed to MESuSiE |
