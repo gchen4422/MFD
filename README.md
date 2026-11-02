@@ -125,3 +125,9 @@ A common threshold to declare a fine-mapped signal is `PIP_Either > 0.5`.
 ## Dependencies
 
 `MESuSiE`, `susieR`, `data.table`, `dplyr`, `tidyr`
+
+## Citation
+
+If you use MFD in your research, please cite:
+
+> Chen G, Paschou P, Gao B. Systematic benchmarking of multi-ancestry fine-mapping under variant heterogeneity and LD mismatch. *Briefings in Bioinformatics*. 2026;27(5):bbag574. [https://doi.org/10.1093/bib/bbag574](https://doi.org/10.1093/bib/bbag574).
